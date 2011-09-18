@@ -1,0 +1,194 @@
+-----------------------------------
+Directories
+-----------------------------------
+Undetermined_indices/ are reads from each lane that did not match to barcodes with <= 1 mismatch
+alignments/ contain reads that mapped to human genome (and others???) and are contaminants that
+   should be filtered out. The reads are still in the sample directory fastq files but can be
+   removed with the grep command (see below).
+
+-----------------------------------
+Explanation of file names:
+-----------------------------------
+<sample name>_<barcode sequence>_L<lane>_R<read number>_<set number>.fastq.gz
+
+------------------------------------------------------
+Explanation of seq IDs (p.51 of Casava 1.8 manual):
+------------------------------------------------------
+
+@<instrument>:<run number>:<flowcell ID>:<lane>:<tile>:<xpos>:<
+y-pos> <read>:<is filtered>:<control number>:<index
+sequence>
+
+read --- 1 or 2 of a paired end
+filter --- Y means if filtered (means you DON'T WANT IT)
+control number --- 0 if no control bits on, an even # otherwise
+
+A sample to clean the files to get only the filtered reads:
+
+cd /path/to/project/sample
+mkdir filtered
+for fastq in *.fastq.gz ; do zcat $fastq | grep
+-A 3 '^@.* [^:]*:N:[^:]*:' > filtered/$fastq
+; done
+
+for fastq in *.fastq; do grep -A 4 '^@.* [^:]*:N:[^:]*:' > filtered/$fastq; done
+
+ex: for a read with ID
+@EAS139:136:FC706VJ:2:5:1000:12850 1:Y:18:ATCACG
+
+means it did NOT pass quality filtering becuz of the Y in 1:Y:18
+
+-------------------------------------------------
+Quality Scores (changed to ASCII-33 in Hi-Seq!)
+-------------------------------------------------
+
+IMPORTANT: read p.52 of the manual, it says that because it
+           doesn't fully trust the base calling at read ends,
+           if the end segment is mostly low qual (< Q15), they
+           simply mark the entire segment with Q2!!! They say
+           that this does not mean the whole read is useless,
+           but the Q2 bases should not be trusted. LOL
+
+p.159 of the manual shows that in the current version,
+the quality scores are encoded with ASCII-33, with the 
+quality score range 0-40.
+
+However in some of the intermediate and alignment output formats,
+the quality score is still encoded as ASCII-64 =_______=!!
+
+
+-------------------------------------------------
+Contaminant list
+-------------------------------------------------
+From the alignment/ directories I generated the list of read IDs
+(identifiable uniquely via lane:tile:x:y for every sample)
+that are contaminants. They are now also copied to the filtered/
+directory. The alignment is only done for ONE of the TWO paired
+reads, but it's ok, because the lane:tile:x:y is the same for the
+mated pairs. 
+
+It seems like all the contaminants that are 'QC' (quality failure,
+probably too many N bases) are already filtered out and won't
+be in the filtered/ fastq files. But the adpters, mitochondrials, etc
+might still be.
+
+TODO: remove the contaminants from the filtered?
+
+
+-------------------------------------------------
+Quality filtering: removing reads that are
+ (1) contaminant
+     and/or
+ (2) failed chastity filtering
+-------------------------------------------------
+The script to do so is remove_contaminants.cmd.py
+The srun commands are in remove_contaminants.cmd
+
+
+The result is in filtered/, there will be a new fasta.gz file where reads
+both pass chastity filtering and contaminant check. 
+
+filtered/filtered.txt shows
+<filename>:good <number of remaininig good reads> chastity <though that failed chastity filter> alignment <contaminant reads>
+
+
+------------------------------------------------
+Aligning paired reads to BowTie
+refDB: SILVA100_justHumanCrap.1crap_masked.V3region_ungapped_nonredundant
+   (current stashed in Sample_DS19175/filtered, I should move it upward...)
+------------------------------------------------
+The script run_align_bowtie.py is used to generate bowtie commands, ex:
+
+bowtie --un DS19175.unaligned <refDB> -1 DS19175_1.fastq -2 DS19175_2.fastq DS19175.aligned
+
+also directs the log output to DS19175.bowtie.log. gzips everything when done.
+
+------------------------------------------------
+Composite reads & scores (on aligned reads)
+------------------------------------------------
+The composite reads were generated using commands:
+
+python /home/etseng/Dropbox/SchoolWork/GitCode/gbpML/data/evaluations/simerr/run_composite.py --input Sample_DS19175/filtered/DS19175.aligned.gz --output Sample_DS19175/filtered/DS19175.aligned.composite
+gzip Sample_DS19175/filtered/DS19175.aligned.composite
+
+*NOTE: run_composite.py is a wrapper script that uses either the pure python version composite.py or the faster Cython version c_composite.pyx
+
+------------------------------------------------
+What about unaligned reads?
+------------------------------------------------
+It is possible to implement Chisholm's aligner thingy where you stitch unaligned reads
+based on the max-scoring overlap. 
+
+However I think that can be overlooked for now.
+Some interactive code using the two functions below...show that most of the unaligned
+reads look like garbage. I couldn't find any read pairs that overlap perfectly by > 10bp,
+and for a few that overlapped like 4 or 6 bp, when stitched together and run by RDP,
+the assignments looked horrible. I think our refDB has sufficiently captured the breadth
+of the gut, plus with the paired reads, BowTie is much more forgiving about read errors!
+
+def id(s1,s2,overlap):
+    same = 0
+    for i in xrange(overlap): same += (s1[-overlap+i] == s2[i])
+    return same
+
+def run():
+    for r1,r2 in f:
+        s1="".join(r1['seq'])
+        s2="".join(r2['seq'])
+        s2=s2[::-1]
+        if max(id(s1,s2,i)*1./i for i in xrange(10,101)) >= 1.:
+            print 'aha'
+            return r1,r2,s1,s2
+
+
+
+-------------------------------------------------
+Phred score & overlap length tally
+-------------------------------------------------
+To plot the phred scores for the forward, reverse, and composite reads
+as well as see the general distribution of read overlaps,
+
+python tally_qual_scores.py -i Sample_DS19175/filtered/DS19175.aligned.gz -s +  
+(this generates <filename>.plus.phred_scores.txt)
+python tally_qual_scores.py -i Sample_DS19175/filtered/DS19175.aligned.gz -s -
+(this generates <filename>.minus.phred_scores.txt)
+
+*Note: here, forward/reverse reads aren't necessarily the two paired files, 
+ex: DS19175_ATCACG_L001_R1_001.fastq.gz, DS19175_ATCACG_L001_R2_001.fastq.gz,
+instead it is determined by the .aligned.gz file, in the strand field, by +/-.
+
+python tally_qual_scores.py -i Sample_DS19175/filtered/DS19175.aligned.composite.gz 
+python tally_qual_scores.py -i Sample_DS19175/filtered/DS19175.aligned.composite.gz -r
+(the -r option reverses the entire read/qual before calculating)
+
+Since the reads are 100bp each end and overlaps are < 30bp, we would expect that the first parts
+of the forward strand almost completely agrees with the first parts of the composite (sans reverse),
+and that the first parts of the reverse strand agrees with the first parts of the composite (reversed).
+
+The overlap length is a simple script that is called like:
+python tally_overlap_size.py Sample_DS19175/filtered/DS19175.aligned.composite.gz > Sample_DS19175/filtered/DS19175.aligned.composite.gz.overlap.txt
+
+The R scripts for generating phred scores plots & overlap length histograms are in:
+/home/etseng/Dropbox/SchoolWork/FH_Meredith/output/20110912_EBB_Illumina_phred_n_overlap
+
+The command used to generate all the images are:
+find data/*.overlap.txt | xargs -i expr substr {} 1 12 | xargs -i Rscript process_sample.R {}
+(this makes all the .png in data/, so then I manually move them to images/)
+mv data/*.png images/
+
+
+-------------------------------------------------
+Uniquify-ing sequences & running RDP classifier
+-------------------------------------------------
+Since RDP classifier doesn't care about qual scores, we first uniquify the sequences using:
+
+python uniquify_seqs.py <filename>
+
+which results in <filename>.unique.fasta and <filename>.unique.count.
+
+Then we run RDP Classifier (v2.3) for example:
+
+srun -p pubnorm -N 1 srun -p pubnorm -N 1 java -Xmx1g -jar /home/etseng/software_download/rdp_classifier_2.3/rdp_classifier-2.3.jar -q Sample_DS19330/filtered/DS19330.aligned.composite.gz.unique.fasta -f fixrank -o Sample_DS19330/filtered/DS19330.aligned.composite.gz.unique.fasta.rdp_classified
+
+
+
