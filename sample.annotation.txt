@@ -1,0 +1,98 @@
+Sample	Set	plate	Well	Notes	BC	Status	Fat	Name
+19175	set 1	Plate 2	A3	200048	1	completed	25.7214	lean
+19176	set 1	Plate 2	A4	300021	2	completed	33.0825	normal
+19177	set 1	Plate 2	A5	300090	3	completed	39.2448	obese
+19178	set 1	Plate 2	A6	300153	4	completed	39.8626	obese
+19179	set 1	Plate 2	A7	300262	5	completed	34.6158	normal
+19180	set 1	Plate 2	A8	400026	6	completed	42.9954	obese
+19181	set 1	Plate 2	A9	400112	7	completed	29.5158	normal
+19182	set 1	Plate 2	A10	500050	8	completed	35.4828	normal
+19183	set 1	Plate 2	A11	500143	9	completed	36.344	normal
+19184	set 11	Plate 2	A12	400096		pending	24.9663	lean
+19185	set 1	Plate 2	B1	100380	10	completed	40.371	obese
+19186	set 1	Plate 2	B2	100534	11	completed	34.2416	normal
+19187	set 1	Plate 2	B3	200060	12	completed	40.7935	obese
+19188	set 2	Plate 2	B4	300032	1	completed	26.9438	lean
+19189	set 2	Plate 2	B5	300092	2	completed	35.7684	normal
+19190	set 2	Plate 2	B6	300158	3	completed	42.6862	obese
+19191	set 2	Plate 2	B7	300292	4	completed	31.4529	normal
+19192	set 2	Plate 2	B8	400029	5	completed	37.1738	normal
+19193	set 2	Plate 2	B9	400128	6	completed	32.7819	normal
+19194	set 2	Plate 2	B10	500056	7	completed	43.327	obese
+19195	set 2	Plate 2	B11	500161	8	completed	29.738	normal
+19196	set 2	Plate 2	B12	100338	9	completed	37.776	normal
+19197	set 2	Plate 2	C1	100398	10	completed	40.371	obese
+19198	set 2	Plate 2	C2	100536	11	completed	37.7984	normal
+19199	set 2	Plate 2	C3	200111	12	completed	35.6154	normal
+19200	set 3	Plate 2	C4	300048	1	completed	34.924	normal
+19201	set 3	Plate 2	C5	300098	2	completed	41.3663	obese
+19202	set 3	Plate 2	C6	300206	3	completed	42.6862	obese
+19203	set 3	Plate 2	C7	300297	4	completed	33.1919	normal
+19204	set 3	Plate 2	C8	400030	5	completed	27.5556	lean
+19205	set 3	Plate 2	C9	500010	6	completed	27.7711	lean
+19206	set 3	Plate 2	C10	500069	7	completed	29.4153	normal
+19207	set 3	Plate 2	C11	500179	8	completed	28.2133	normal
+19208	set 3	Plate 2	C12	100340	9	completed	41.4121	obese
+19209	set 3	Plate 2	D1	100430	10	completed	36.9167	normal
+19210	set 3	Plate 2	D2	100549	11	completed	43.8729	obese
+19211	set 3	Plate 2	D3	200123	12	completed	33.3208	normal
+19212	set 4	Plate 2	D4	300049	1	completed	22.6478	lean
+19213	set 4	Plate 2	D5	300117	2	completed	29.4651	normal
+19214	set 4	Plate 2	D6	300213	3	completed	22.7438	lean
+19215	set 4	Plate 2	D7	300298	4	completed	37.9997	normal
+19216	set 4	Plate 2	D8	400039	5	completed	31.27	normal
+19217	set 4	Plate 2	D9	500013	6	completed	27.7711	lean
+19218	set 4	Plate 2	D10	500073	7	completed	45.4937	obese
+19219	set 4	Plate 2	D11	600010	8	completed	40.1237	obese
+19220	set 4	Plate 2	D12	100354	9	completed	41.4121	obese
+19221	set 4	Plate 2	E1	100461	10	completed	34.6195	normal
+19222	set 4	Plate 2	E2	100550	11	completed	32.7127	normal
+19223	set 4	Plate 2	E3	300005	12	completed	31.2523	normal
+19319	set 5	Plate 2	E4	300055	1	completed	35.377	normal
+19320	set 5	Plate 2	E5	300118	2	completed	29.4651	normal
+19321	set 5	Plate 2	E6	300230	3	completed	44.7571	obese
+19322	set 5	Plate 2	E7	400001	4	completed	25.3754	lean
+19323	set 5	Plate 2	E8	400043	5	completed	25.4208	lean
+19324	set 5	Plate 2	E9	500023	6	completed	39.4794	obese
+19325	set 5	Plate 2	E10	500083	7	completed	42.908	obese
+19326	set 5	Plate 2	E11	600049	8	completed	37.5614	normal
+19327	set 5	Plate 2	E12	100358	9	completed	26.9339	lean
+19328	set 5	Plate 2	F1	100470	10	completed	40.0589	obese
+19329	set 5	Plate 2	F2	200017	11	completed	40.9967	obese
+19330	set 5	Plate 2	F3	400068	12	completed	25.4993	lean
+19331	set 6	Plate 2	F4	300059	1	completed	43.1152	obese
+19332	set 6	Plate 2	F5	300131	2	completed	32.5056	normal
+19333	set 6	Plate 2	F6	300245	3	completed	33.9659	normal
+19334	set 6	Plate 2	F7	400002	4	completed	33.7765	normal
+19335	set 6	Plate 2	F8	400049	5	completed	34.8924	normal
+19336	set 6	Plate 2	F9	500027	6	completed	40.3655	obese
+19337	set 6	Plate 2	F10	500101	7	completed	35.7428	normal
+19338	set 6	Plate 2	F11	700018	8	completed	46.0696	obese
+19339	set 6	Plate 2	F12	100525	9	completed	38.344	obese
+19340	set 6	Plate 2	G1	100481	10	completed	37.0815	normal
+19341	set 6	Plate 2	G2	200026	11	completed	27.4379	lean
+19342	set 6	Plate 2	G3	300015	12	completed	40.8272	obese
+19343	set 7	Plate 2	G4	300062	1	starting 06/28	31.8127	normal
+19344	set 7	Plate 2	G5	300139	2	starting 06/28	27.2811	lean
+19345	set 7	Plate 2	G6	300249	3	starting 06/28	34.4143	normal
+19346	set 7	Plate 2	G7	400014	4	starting 06/28	24.9572	lean
+19347	set 7	Plate 2	G8	400050	5	starting 06/28	34.686	normal
+19348	set 7	Plate 2	G9	500037	6	starting 06/28	45.5509	obese
+19349	set 7	Plate 2	G10	500107	7	starting 06/28	44.265	obese
+19350	set 7	Plate 2	G11	700026	8	starting 06/28	28.452	normal
+19351	set 7	Plate 2	H1	100523	9	starting 06/28	21.1423	lean
+19352	set 7	Plate 2	H2	200033	10	starting 06/28	39.6639	obese
+19353	set 7	Plate 2	H3	300016	11	starting 06/28	35.4612	normal
+19354	set 7	Plate 2	H4	300071	12	starting 06/28	22.8657	lean
+19355	set 8	Plate 2	H5	300148	1	starting 06/28	28.9182	normal
+19356	set 8	Plate 2	H6	300251	2	starting 06/28	44.6484	obese
+19357	set 8	Plate 2	H7	400024	3	starting 06/28	41.5567	obese
+19358	set 8	Plate 2	H8	400057	4	starting 06/28	26.3627	lean
+19359	set 8	Plate 2	H9	500048	5	starting 06/28	26.3743	lean
+19360	set 8	Plate 2	H10	500131	6	starting 06/28	40.2511	obese
+19361	set 8	Plate 2	H11	700036	7	starting 06/28	43.3793	obese
+19362	set 8	Plate 1	A1	100004	8	starting 06/28	33.764	normal
+19363	set 8	Plate 1	A2	100169	9	starting 06/28	23.8219	lean
+19364	set 8	Plate 1	A3	100214	10	starting 06/28	41.0886	obese
+19365	set 8	Plate 1	A4	100295	11	starting 06/28	27.0738	lean
+19366	set 8	Plate 1	B1	100037	12	starting 06/28	35.1938	normal
