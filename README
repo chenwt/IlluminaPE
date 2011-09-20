@@ -179,6 +179,10 @@ mv data/*.png images/
 
 -------------------------------------------------
 Uniquify-ing sequences & running RDP classifier
+
+*.unique.count
+*.unique.fasta
+*.unique.rdp_classified
 -------------------------------------------------
 Since RDP classifier doesn't care about qual scores, we first uniquify the sequences using:
 
@@ -189,6 +193,42 @@ which results in <filename>.unique.fasta and <filename>.unique.count.
 Then we run RDP Classifier (v2.3) for example:
 
 srun -p pubnorm -N 1 srun -p pubnorm -N 1 java -Xmx1g -jar /home/etseng/software_download/rdp_classifier_2.3/rdp_classifier-2.3.jar -q Sample_DS19330/filtered/DS19330.aligned.composite.gz.unique.fasta -f fixrank -o Sample_DS19330/filtered/DS19330.aligned.composite.gz.unique.fasta.rdp_classified
+
+-------------------------------------------------
+RDP output tabulated for plotting & PC-ord
+
+*.unique.rdp_classified.table.gz
+*.unique.rdp_classified.table.gz.<taxonomy>(.png)
+-------------------------------------------------
+We need to re-annotate the RDP output with the counts, so I used:
+
+python process_rdp_classified.py -i DS19188.aligned.composite.gz
+
+which means it'll read DS19188.aligned.composite.gz.unique.rdp_classified
+and output DS19188.aligned.composite.gz.unique.rdp_classified.table.gz (compressed)
+with the fields:
+
+ID,overlap,count,phylum,phylumConf,class,classConf,family,familyConf,order,orderConf,genus,genusConf
+
+This can be easily read by R for further processing.
+
+We use 50% confidence score cutoff to tally abundances at different taxonomic levels.
+"Unclassified" refers to both sequences that have either (a) conf score < 50% or (b) no RDP annotation.
+
+To get the phylum/class/order/family/genus level counts, use command:
+
+Rscript Rscript/plotRDPoutput.R DS19188.aligned.composite.gz.unique.rdp_classified.table.gz
+
+which will generate:
+
+DS19188.aligned.composite.gz.unique.rdp_classified.table.gz.phylum
+DS19188.aligned.composite.gz.unique.rdp_classified.table.gz.phylum.png
+DS19188.aligned.composite.gz.unique.rdp_classified.table.gz.class
+DS19188.aligned.composite.gz.unique.rdp_classified.table.gz.class.png
+....and so on
+
+
+
 
 
 
