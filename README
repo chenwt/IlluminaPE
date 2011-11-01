@@ -177,6 +177,29 @@ find data/*.overlap.txt | xargs -i expr substr {} 1 12 | xargs -i Rscript proces
 mv data/*.png images/
 
 
+[ THIS USED TO BE FOLLOWED BY UNIQUIFYING (see OBSOLETE STUFF) BUT NOW CHANGED THO FILES STILL THERE ]
+
+
+-------------------------------------------------
+Post-composite:
+
+(1) quality filtering
+(2) chained OTU picking
+(3) rarefaction
+-------------------------------------------------
+(1)+(2) is done via: 
+
+	bash filter_n_otu_chain.sh <sample>.aligned.composite.gz
+
+I can't figure out why mothur kept NOT being ok with being run through bash :(
+but anyhow I ended up running my batch submit script with command files of form:
+
+	rarefaction.single(list=Sample_DS19200/filtered/DS19200.aligned.composite.gz.chained_otu.list)
+
+
+
+
+[ OBSOLETE STUFF BELOW!!! I NOW REALIZE I NEED MORE QUAL CONTROL ]
 -------------------------------------------------
 Uniquify-ing sequences & running RDP classifier
 

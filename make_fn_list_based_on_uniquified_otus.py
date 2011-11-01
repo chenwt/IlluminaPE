@@ -1,6 +1,7 @@
 import os,sys,gzip
+from collections import defaultdict
 
-def make_fn_list(otu_txt, cutoff='0.03'):
+def make_fn_list(otu_txt, out_filename, count_filename=None, cutoff='0.03'):
 	"""
 	Assume that otu_txt is the result from running Qiime's pick_otus.py using some cutoff
 	Then we want to make a .fn.list in Mothur's style so that we can run single.rarefaction
@@ -9,17 +10,27 @@ def make_fn_list(otu_txt, cutoff='0.03'):
 	If otu_txt is DS19201.aligned.composite.gz.unique_otus.txt, then
 	the unique.count file must be ../DS19201.aligned.composite.gz.unique.count.gz
 
+	if count_filename is None, then that makes _otu.txt already takes it into account.
+
+	Output is .list format that mothur uses for rarefaction n stuff, should be
+	<cutoff> \t <# of clusters> \t <space-delimited clusters where IDs are comma-separated>
+	ex: 0.03	3	a b,c,d e,f
+
 	Since mothur's single.rarefaction doesn't actually pay attention to what the seq IDs are,
 	we're just going to use 'a' to represent all seq IDs!
 	"""
-	assert otu_txt.endswith('_otus.txt')
+	#assert otu_txt.endswith('_otus.txt')
 	d = {} # representative id --> count
-	f = open(otu_txt[:-4] + '.fn.list', 'w')
-	for line in gzip.open(os.path.dirname(otu_txt) + '../' + os.path.basename(otu_txt)[:-9] + '.count.gz'):
-		rep_id, count, members = line.strip().split('\t')
-		rep_id = rep_id.split(None)[0] # the ID had some clean up done here...
-		d[rep_id] = int(count)
+	if count_filename is not None:
+		for line in open(count_filename):
+			rep_id, count, members = line.strip().split('\t')
+			rep_id = rep_id.split(None)[0] # the ID had some clean up done here...
+			d[rep_id] = int(count)
+	else:
+		d = defaultdict(lambda: 1)
+
 	p = open(otu_txt).read().strip().split('\n')
+	f = open(out_filename, 'w')
 	f.write(cutoff + '\t')
 	f.write(str(len(p)) + '\t')
 	for x in p:
@@ -31,5 +42,5 @@ def make_fn_list(otu_txt, cutoff='0.03'):
 	f.close()
 
 if __name__ == "__main__":
-	make_fn_list(sys.argv[1])
+	make_fn_list(sys.argv[1], sys.argv[2])
 

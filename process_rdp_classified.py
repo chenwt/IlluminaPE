@@ -1,9 +1,9 @@
-import os,sys
+import os,sys,gzip
 
 def process_rdp_classifier(sample):
 	"""
 	Given <sample>, there should be:
-	 - <sample>.unique.count
+	 - <sample>.unique.count.gz
 	 - <sample>.unique.fasta
 	 - <sample>.unique.fasta.rdp_classified
 
@@ -17,7 +17,7 @@ def process_rdp_classifier(sample):
 	"""
 	overlap = {} # shortened ID --> overlap size
 	counts  = {} # shortened ID --> counts
-	with open(sample + '.unique.count') as f:
+	with gzip.open(sample + '.unique.count.gz') as f:
 		for line in f:
 			long_id, count, ignore = line.split('\t')
 			short_id, ignore, raw_overlap = long_id.split()
