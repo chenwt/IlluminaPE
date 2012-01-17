@@ -186,6 +186,9 @@ Post-composite:
 (1) quality filtering
 (2) chained OTU picking
 (3) rarefaction
+
+*.aligned.composite.gz.chained_otu.txt
+*.aligned.composite.gz.chained_otu.rarefaction(.png)
 -------------------------------------------------
 (1)+(2) is done via: 
 
@@ -196,7 +199,38 @@ but anyhow I ended up running my batch submit script with command files of form:
 
 	rarefaction.single(list=Sample_DS19200/filtered/DS19200.aligned.composite.gz.chained_otu.list)
 
+Plotting rarefaction of BOTH Illumina and whatever first-batch pyro we have is done via:
+/bin/ls -d ../Sample_DS19* | cut -c 13-19 | xargs -n1 -i Rscript Rscripts/plotRarefaction_IlluminaNPyro.R {}
 
+Rscripts/plotRarefaction_IlluminaNPyro.R takes in the sample name (ex: 19175) and figures out the mapping
+well name (ex: A3) for the pyro file. The pyro rarefaction file should be:
+
+$silo2/LAB_SHARED/Fei/EBB05-2011/EBB.final.an.<well>.rarefaction
+
+The Illumina one is under every filtered/: <DS_sample>.aligned.composite.gz.chained_otu.rarefaction
+Output rarefaction png is just: <DS_sample>.aligned.composite.gz.chained_otu.rarefaction.png
+
+
+--------------------------------------------------
+Running RDP classifier and collating output
+*.chained_otu.rdp_classified
+*.chained_otu.rdp_classified.table
+-------------------------------------------------
+
+Similar to how I did it with the obsolete unique stuff below, I ran RDP classifier on the chained output rep fasta file then processed it into .table format.
+
+gunzip Sample_DS19*/filtered/*aligned.composite.gz.phred20_passed.unique.prefix50suffix50otu.cdhit.fasta.gz
+ls Sample_DS19*/filtered/*aligned.composite.gz.phred20_passed.unique.prefix50suffix50otu.cdhit.fasta | xargs -n1 -i echo "java -Xmx1g -jar /home/etseng/software_download/rdp_classifier_2.3/rdp_classifier-2.3.jar -f fixrank -q {} -o {}.rdp_classified" > cmd
+bash cmd
+rename phred20_passed.unique.prefix50suffix50otu.cdhit.fasta.rdp_classified chained_otu.rdp_classified Sample_DS19*/filtered/*aligned.composite.gz.phred20_passed.unique.prefix50suffix50otu.cdhit.fasta.rdp_classified
+gzip Sample_DS19*/filtered/*aligned.composite.gz.phred20_passed.unique.prefix50suffix50otu.cdhit.fasta
+
+python process_rdp_classified.py -i ../Sample_DS19183/filtered/DS19183.aligned.composite.gz
+
+
+Then I can plot it using the same R script:
+
+Rscript Rscripts/plotRDPoutput.R  ../Sample_DS19175/filtered/DS19175.aligned.composite.gz.chained_otu.rdp_classified.table
 
 
 [ OBSOLETE STUFF BELOW!!! I NOW REALIZE I NEED MORE QUAL CONTROL ]

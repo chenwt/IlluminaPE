@@ -1,0 +1,5 @@
+Contaminant DB from Audra.
+
+Make into bowtie index with command:
+
+bowtie-build adapter_contam1.fa,chrM.fa,hum5SrDNA.fa,humRibosomal.fa,phix.fa,polyA.fa,polyC.fa StamLab_contam

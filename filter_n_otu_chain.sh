@@ -46,7 +46,7 @@ if [ $STEP -eq 2 -o $STEP -eq 0 ]; then
 fi
 
 if [ $STEP -eq 3 -o $STEP -eq 0 ]; then
-	cmd="python $QIIME/pick_otus.py -m cdhit -n 100 -i $INPUT.phred20_passed.unique.prefix50suffix50otu.fasta -o $INDIR/picked_otus2/"
+	cmd="python $QIIME/pick_otus.py -m cdhit -s 0.97 -n 100 -i $INPUT.phred20_passed.unique.prefix50suffix50otu.fasta -o $INDIR/picked_otus2/"
 	echo "Running command: $cmd" >> $LOG
 	$cmd
 	echo `date` >> $LOG
