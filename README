@@ -1,4 +1,11 @@
 -----------------------------------
+To update with GIT:
+-----------------------------------
+git commit -a -m "message goes here"
+git push origin (password is my street name)
+
+
+-----------------------------------
 Directories
 -----------------------------------
 Undetermined_indices/ are reads from each lane that did not match to barcodes with <= 1 mismatch
