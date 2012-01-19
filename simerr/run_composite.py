@@ -1,6 +1,6 @@
 if __name__ == "__main__":
 	import os, sys
-	sys.path.append('/home/etseng/Dropbox/SchoolWork/GitCode/gbpML/data/evaluations/simerr/')
+	sys.path.append(os.path.join(os.environ['EBB'],'IlluminaPE/simerr'))
 	from miscBowTie import BowTieReader, BowTieWriter
 	from cPickle import *
 	from optparse import OptionParser
