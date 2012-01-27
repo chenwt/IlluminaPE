@@ -1,8 +1,7 @@
-import os,sys,gzip
-sys.path.append('/shared/silo_researcher/Lampe_J/Gut_Bugs/UW_Larry/gbpML/data/evaluations/simerr/')
+import os,sys,gzip,time
 from miscBowTie import BowTieReader, gziplines
 
-def filter_low_qual_seqs(gz_filename, phred_cutoff=20):
+def filter_low_qual_seqs(gz_filename, phred_offset, phred_cutoff):
 	"""
 	Takes a BowTie-style gzipped file (ex: .aligned.composite.gz)
 	and retain only seqs that have every base phred >= <cutoff>
@@ -15,9 +14,10 @@ def filter_low_qual_seqs(gz_filename, phred_cutoff=20):
 	index = 0 # for tracking unique clusters
 	bad = 0
 	good = 0
+	start_t = time.time()
 	f = open(gz_filename + ".phred{0}_passed.unique.fasta".format(phred_cutoff), 'w')
 	for r in BowTieReader(gz_filename, False):
-		if all(ord(x)-33 >= phred_cutoff for x in r['qual']):
+		if all(ord(x)-phred_offset >= phred_cutoff for x in r['qual']):
 			good += 1
 			if r['seq'] in seen:
 				seen[r['seq']]['ids'].append(r['ID'])
@@ -33,7 +33,7 @@ def filter_low_qual_seqs(gz_filename, phred_cutoff=20):
 		for d in seen.itervalues():
 			f.write("{0}\t{1}\n".format(d['index'], "\t".join(d['ids'])))
 	with open(gz_filename + ".phred{0}_passed.unique.log".format(phred_cutoff), 'w') as f:
-		f.write("Running filter_low_qual_seqs\n")
+		f.write("Running filter_low_qual_seq took {0} secs\n".format(time.time()-start_t))
 		f.write("Input: " + gz_filename + '\n')
 		f.write("PhredCutoff: " + str(phred_cutoff) + '\n')
 		f.write("RemovedDueToLowQual: " + str(bad) + '\n')
@@ -68,4 +68,13 @@ def filter_low_count_low_qual_seqs(gz_filename):
 
 if __name__ == "__main__":
 #	filter_low_count_low_qual_seqs(sys.argv[1])
-	filter_low_qual_seqs(sys.argv[1])
+	import argparse
+
+	parser = argparse.ArgumentParser(description='Discard reads with 1 or more base with phred score < T')
+	parser.add_argument("-i", dest="input", required=True, help="Input file (BowTie format, gzipped)")
+	parser.add_argument("-t", dest="threshold", required=True, type=int,\
+			help="Phred score cutoff")
+	parser.add_argument("-o", dest="offset", default=33, type=int, help="Phred score offset (default 33)")
+	args = parser.parse_args()
+
+	filter_low_qual_seqs(args.input, args.offset, args.threshold)

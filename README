@@ -116,9 +116,27 @@ Composite reads & scores (on aligned reads)
 The composite reads were generated using commands:
 
 python /home/etseng/Dropbox/SchoolWork/GitCode/gbpML/data/evaluations/simerr/run_composite.py --input Sample_DS19175/filtered/DS19175.aligned.gz --output Sample_DS19175/filtered/DS19175.aligned.composite
+(OR NEW PATH BELOW:)
+python $EBB/IlluminaPE/simerr/run_composite.py --input Sample_DS19175/filtered/DS19175.aligned.gz --output Sample_DS19175/filtered/DS19175.aligned.composite
+
 gzip Sample_DS19175/filtered/DS19175.aligned.composite
 
 *NOTE: run_composite.py is a wrapper script that uses either the pure python version composite.py or the faster Cython version c_composite.pyx
+
+
+------------------------------------------------
+Match & Remove V3 forward & reverse primers
+
+f_primer = 'ACTCCTACGGGAGGCAGCAGT'  (5'-3')
+r_primer = 'GTGCCAGCAGCCGCGGTAATAC' (5'-3')
+------------------------------------------------
+remove_primers.py will match primers with at most 2 mismatches (default).
+Those that don't match are thrown out (.primer_bad), good ones are retained
+with primers removed (.primer_good). The primers can be a partially match,
+meaning that only f_primer[i:] matches the first 21-i nt of the read, and/or
+r_primer[:i] matches the last i nt of the read.
+
+python remove_primers.py -i DS19175.aligned.composite.gz
 
 ------------------------------------------------
 What about unaligned reads?

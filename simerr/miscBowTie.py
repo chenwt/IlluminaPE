@@ -93,7 +93,15 @@ class BowTieReader:
 			# sanity check that the IDs should have the same header!
 			# ex: HWI-ST700693:106:D05FJACXX:1:1101:1273:1988 2:N:0:ATCACG/2 and
 			# ex: HWI-ST700693:106:D05FJACXX:1:1101:1273:1988 1:N:0:ATCACG/1
-			assert r1['ID'].split()[0] == r2['ID'].split()[0]
+			if len(r1['ID'].split(None)) == 2:
+				assert r1['ID'].split()[0] == r2['ID'].split()[0]
+			elif len(r1['ID'].split(None)) == 1:
+			# the 2nd batch Illumina ID is different:
+			# ex: HWI-ST700693:182:D0MGFACXX:7:1101:1472:1997/1  and
+			# ex: HWI-ST700693:182:D0MGFACXX:7:1101:1472:1997/2
+				assert r1['ID'][:-1] == r2['ID'][:-1]
+			else:
+				raise AssertionError, "ID format unknown! {0} and {1}".format(r1['ID'], r2['ID'])
 			return r1, r2
 				
 		else: # single reads
@@ -145,10 +153,11 @@ class BowTieWriter:
 		self.f.write("{0} COMPOSED/{1}\t+\t{2}\t{3}\t{4}\t{5}\n".format(r1['ID'], overlap,\
 				r1['ref'], r1['offset'], seq, qual))
 
-	def write(self ,r):
+	def write(self, r):
 		"""
 		Implement LATER (TODO)
 		"""
-		pass
+		self.f.write(r['ID'] + '\t+\t' + r['ref'] + '\t' + str(r['offset']))
+		self.f.write('\t' + r['seq'] + '\t' + r['qual'] + '\n')
 		
 
