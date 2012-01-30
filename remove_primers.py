@@ -23,6 +23,7 @@ def match_primer_len(seq, primer, max_mm_allowed, max_offset_allowed, is_reverse
 	return 0
 
 def remove_primers(input, f_primer, r_primer, max_mm_allowed=2, max_offset_allowed=10):
+	os.system("rm {0}.primer_*".format(input))
 	hgood = BowTieWriter(input + '.primer_good')
 	hbad  = BowTieWriter(input + '.primer_bad')
 	hlog = open(input + '.primer.log', 'w')

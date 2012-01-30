@@ -25,13 +25,13 @@ cdef object compose(bytes b1, bytes b2, double e1, double e2, object base_freq):
 
 	assert e1 < 1.
 	assert e2 < 1.
-	assert sum(base_freq.itervalues()) == 1.
+	assert abs(sum(base_freq.itervalues()) -1) < .01
 
-	if b1 == 'N' or b2 == 'N':
+	if b1 == b"N" or b2 == b"N":
 		if b1 == b2:
 			n = b1
 			p = err2
-		elif b1 != 'N':
+		elif b1 != b"N":
 			n = b1
 			p = e1
 		else: # b2 != 'N'

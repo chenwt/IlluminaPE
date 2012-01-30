@@ -10,6 +10,8 @@ def filter_low_qual_seqs(gz_filename, phred_offset, phred_cutoff):
 	Outputs: .phred<cutoff>_passed.unique.fasta
 	         .phred<cutoff>_passed.unique.count
 	"""
+	assert phred_offset >= 0
+	assert phred_cutoff >= 0
 	seen = {} # seq --> {'ids':list of IDs, 'index':associated cluster index}
 	index = 0 # for tracking unique clusters
 	bad = 0
