@@ -33,8 +33,8 @@ def remove_primers(input, f_primer, r_primer, max_mm_allowed=2, max_offset_allow
 		match_f_len = match_primer_len(r['seq'], f_primer, max_mm_allowed, max_offset_allowed, False)
 		match_r_len = match_primer_len(r['seq'], r_primer, max_mm_allowed, max_offset_allowed, True)
 		if match_f_len > 0 and match_r_len > 0:
-			r['seq'] = r['seq'][match_f_len+1:-match_r_len]
-			r['qual'] = r['qual'][match_f_len+1:-match_r_len]
+			r['seq'] = r['seq'][match_f_len:-match_r_len]
+			r['qual'] = r['qual'][match_f_len:-match_r_len]
 			r['offset'] = match_f_len
 			hgood.write(r)
 			good += 1
