@@ -93,9 +93,9 @@ def compose2(r1, r2, base_freq):
 	log10 = lambda x: math.log(x, 10)
 	N = len(r1['seq'])
 	delta = r2['offset'] - r1['offset'] # the overlap is N-delta
-	if N <= delta: # there is no overlap! put a bunch of Ns in the middle
+	if N <= delta: # there is no overlap! put a bunch of ?s in the middle
 		insert = delta-N
-		seq = r1['seq'] + 'N'*insert + r2['seq']
+		seq = r1['seq'] + '?'*insert + r2['seq']
 		qual = r1['qual'] + '#'*insert + r2['qual']
 	else:
 		seq = r1['seq'][:delta]

@@ -8,7 +8,21 @@ def gziplines(fname):
 	f = Popen(['zcat', fname], stdout=PIPE)
 	for line in f.stdout:
 		yield line
-
+		
+class FastqWriter:
+	def __init__(self, filename):
+		assert not os.path.exists(filename)
+		self.f = open(filename, 'w')
+	
+	def close(self):
+		self.f.close()
+		
+	def write(self, r):
+		self.f.write("@{id}\n{seq}\n+{id}\n{qual}\n".format(\
+			id=r['ID'], seq=r['seq'], qual=r['qual']))
+									
+		
+		
 class FastqReader:
 	def __init__(self, filename):
 		self.filename = filename
@@ -131,12 +145,14 @@ class BowTieReader:
 				'ref': line[2], \
 				'offset': int(line[3]), \
 				'seq': line[4], \
-				'qual': line[5]}
+				'qual': line[5], \
+				'mm': line[7] if len(line)>=8 else ''}
 
 class BowTieWriter:
-	def __init__(self, filename):
-		assert not os.path.exists(filename)
-		self.f = open(filename, 'w')
+	def __init__(self, filename, mode='w'):
+		assert mode!='w' or not os.path.exists(filename)
+		self.mode = mode
+		self.f = open(filename, mode)
 	
 	def close(self):
 		self.f.close()

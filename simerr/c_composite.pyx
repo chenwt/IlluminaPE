@@ -108,8 +108,8 @@ def compose2(r1, r2, base_freq):
 	N = len(r1['seq'])
 	delta = r2['offset'] - r1['offset']
 	insert = N - delta
-	if insert <= 0: # there is no overlap! put a bunch of Ns in the middle
-		seq = r1['seq'] + 'N'*(-insert) + r2['seq']
+	if insert <= 0: # there is no overlap! put a bunch of ?s in the middle
+		seq = r1['seq'] + '?'*(-insert) + r2['seq']
 		qual = r1['qual'] + '#'*(-insert) + r2['qual']
 	else:
 		seq = r1['seq'][:delta]
