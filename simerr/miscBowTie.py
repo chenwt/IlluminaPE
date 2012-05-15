@@ -17,9 +17,9 @@ class FastqWriter:
 	def close(self):
 		self.f.close()
 		
-	def write(self, r):
-		self.f.write("@{id}\n{seq}\n+{id}\n{qual}\n".format(\
-			id=r['ID'], seq=r['seq'], qual=r['qual']))
+	def write(self, r, id=None):
+		self.f.write("@{id}\n{seq}\n+\n{qual}\n".format(\
+			id=r['ID'] if id is None else id, seq=r['seq'], qual=r['qual']))
 									
 		
 		
@@ -39,7 +39,7 @@ class FastqReader:
 		except StopIteration:
 			raise StopIteration
 		assert line.startswith('@')
-		id = line.strip()
+		id = line.strip()[1:] # remove the '@'
 		seq = self.f.next().strip() # sequence
 		self.f.next()
 		qual = self.f.next().strip() # qual

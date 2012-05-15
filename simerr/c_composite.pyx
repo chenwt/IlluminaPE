@@ -122,6 +122,14 @@ def compose2(r1, r2, base_freq):
 		qual += r2['qual'][insert:]
 	return seq, qual, insert
 
+def find_best_overlap(r1, r2):
+	"""
+	In the case where we DON'T know the offset (or decide not to use BowTie)
+	manually figure out the the longest overlap s.t.
+	"""
+	pass
+	# TO BE IMPLEMENTED
+
 #if __name__ == "__main__":
 #	from miscBowTie import BowTieReader, BowTieWriter
 #	from cPickle import *

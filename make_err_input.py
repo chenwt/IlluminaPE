@@ -3,18 +3,16 @@ from csv import DictReader
 from Bio import SeqIO
 from Bio.Seq import MutableSeq
 import pdb
-from collections import namedtuple, defaultdict
 from miscBowTie import BowTieReader, FastqWriter
 from BaseErrPredict import BaseErrPredict
 
-AccCount = namedtuple('AccCount', ['acc', 'count'])
 rint = lambda x: int(round(x))
 
 class ClusterCorrect:
 	def __init__(self, input_bowtie, otu_txt, primer, Rdata, max_allowed_remain_mismatch):
 		"""
-		input_bowtie --- in BowTie format (has seq, qual, and primer offset)
-		otu_txt --- otu file from Qiime (should be done trie, 100% or suffix)
+		input_bowtie --- in BowTie format (has seq, qual, and primer offset), gzipped
+		otu_txt --- otu file from Qiime (90%)
 		"""
 		self.predictor = BaseErrPredict(Rdata)
 		self.input_bowtie = input_bowtie
@@ -22,69 +20,53 @@ class ClusterCorrect:
 		self.primer = primer
 		self.max_allowed_remain_mismatch = max_allowed_remain_mismatch
 		
-		self.otu_info = None
-		self.cluster = self.create_clusters()
-		# sort the cluster by size
-		self.cluster_keys = self.cluster.keys()
-		self.cluster_keys.sort(key=lambda k: self.cluster[k]['size'], reverse=True)
-		
-	def create_clusters(self):
+		self.otu_info = {} # cid (after trie) --> 90% OTU id
+		self.cluster_by_otu = {} # OTU id --> cid --> qual,len,seq... 
+		self.create_clusters_from_bowtie()
+	
+	def create_clusters_from_bowtie(self):
 		"""
-		For each OTU, we avg. the phred score and cycles
-		NOTE: make sure the cycles are GLOBAL not after primer removal
+		The 'offset' field is actually 'abundance'
+		The 'ref' field is actually 'cycle' offset
 		"""
-		self.otu_info = {} # cluster index --> list of seqs
-		# the otu file is probably smaller than BowTie file so read it first
-		cluster = {} # cluster id --> {size, avg. qual per pos, avg. cycle per pos, long seq}
-		otu = {} # seqID --> cluster index
 		with open(self.otu_txt) as f:
 			for line in f:
-				raw = line.strip().split('\t')
-				cid = int(raw[0])
-				for seqid in raw[1:]: otu[seqid] = cid
-				self.otu_info[cid] = raw[1:]
-		
-		# now read the bowtie file
+				otuid, rest = line.strip().split(None, 1)
+				for x in rest.split():
+					self.otu_info[x] = otuid
+				self.cluster_by_otu[otuid] = {}
+
 		for r in BowTieReader(self.input_bowtie, False):
-			rid = r['ID'].split()[0] # sometimes seqids have extra stuff like COMPOSED/14
-			cid = otu[rid]
-			offset = int(r['offset'])
-			if cid not in cluster:
-				cluster[cid] = {'size':0, 'qual':defaultdict(lambda: {'acc':0,'count':0}), \
-							'seq':None, 'cycle':defaultdict(lambda: {'acc':0,'count':0}),\
-							'cid':cid, 'cids':[cid], 'len':None}
-			cluster[cid]['size'] += 1
-			# assign the longest sequence to the cluster as representative
-			if cluster[cid]['seq'] is None or len(r['seq']) > cluster[cid]['len']:
-				cluster[cid]['seq'] = r['seq']
-				cluster[cid]['len'] = len(r['seq'])
-			for pos in xrange(len(r['seq'])):
-				cluster[cid]['qual'][pos]['acc'] += ord(r['qual'][pos]) - 33
-				cluster[cid]['qual'][pos]['count'] += 1
-				cluster[cid]['cycle'][pos]['acc'] += pos + offset
-				cluster[cid]['cycle'][pos]['count'] += 1
+			cid = r['ID']
+			otuid = self.otu_info[r['ID']]
+			self.cluster_by_otu[otuid][cid] = {'dirty':True, 'cids':[cid], 'len':len(r['seq']), 'seq': MutableSeq(r['seq']), 'size':int(r['offset']), \
+					'qual': [ord(x)-33 for x in r['qual']], 'cycle': range(int(r['ref']), int(r['ref'])+len(r['seq']))}		
 		
-		# avg. the qual and cycles
-		for x in cluster.itervalues():
-			x['seq'] = MutableSeq(x['seq'])
-			for pos in x['qual']: x['qual'][pos] = rint(x['qual'][pos]['acc']*1./x['qual'][pos]['count'])
-			for pos in x['cycle']: x['cycle'][pos] = rint(x['cycle'][pos]['acc']*1./x['cycle'][pos]['count'])
-				
-		return cluster				
-		
-	def iter_merge(self):
+	def iter_merge_otu(self, otuid, logf):
+		cluster = self.cluster_by_otu[otuid]
+		ckeys = cluster.keys()
+		ckeys.sort(key=lambda x: cluster[x]['size'], reverse=True)
 		i = 0
-		while i < len(self.cluster_keys)-1:
-			r1 = self.cluster[self.cluster_keys[i]]
+		while i < len(ckeys):
+			r1 = cluster[ckeys[i]]
 			j = i + 1
-			while j < len(self.cluster_keys):
-				r2 = self.cluster[self.cluster_keys[j]]
-				justmm = r1['size'] >= 10 and r2['size'] >= 10 # TODO: hard code 10 or decide to param!
+			changed = False
+			while j < len(ckeys):
+				r2 = cluster[ckeys[j]]
+				# we must check if one or both of r1, r2 has been modified (dirty=True)
+				# otherwise, we have checked this combo before and no need to do again
+				if not r1['dirty'] and not r2['dirty']:
+					j += 1
+					continue
+				justmm = r1['size'] >= 10 and r2['size'] < 10 # TODO: hard code 10 or decide to param!
 				flag, diff_poses, correct = self.predictor.compare_seq(\
 					r1['seq'], r2['seq'], r1['qual'], r2['qual'],\
-					r1['cycle'], r2['cycle'], self.primer, self.max_allowed_remain_mismatch, True)
+					r1['cycle'], r2['cycle'], self.primer, self.max_allowed_remain_mismatch, justmm)
 				if flag: # can correct!
-					print "Correcting!", correct
+					changed = True
+					#print "Correcting!", correct
+					#pdb.set_trace()
+					logf.write("{cids}\t{pos}\n".format(cids=",".join(r2['cids']),pos=",".join(map(str,diff_poses))))
 					for pos, base, q, c in correct:
 						r1['seq'][pos] = base
 						r1['qual'][pos] = q
@@ -104,24 +86,40 @@ class ClusterCorrect:
 								r1['cycle'][pos] = rint((r1['cycle'][pos]*r1['size']+r2['cycle'][pos]*r2['size'])*1./(r1['size']+r2['size']))
 						# append end of r2 to r1
 						for pos in xrange(r1['len'],r2['len']):
-							r1['qual'][pos] = r2['qual'][pos]
-							r1['cycle'][pos] = r2['cycle'][pos]
+							r1['seq'].append(r2['seq'][pos])
+							r1['qual'].append(r2['qual'][pos])
+							r1['cycle'].append(r2['cycle'][pos])
 						r1['len'] = r2['len']
+						assert r1['len']==len(r1['qual'])==len(r1['seq'])==len(r1['cycle'])
 					#print("after merging")
 					#print r1
 					#print r2
+					#pdb.set_trace()
 					#raw_input('wait')
 					
 					# carefully remove j now that we merged it to i
-					del self.cluster[self.cluster_keys[j]]
-					self.cluster_keys.pop(j)
+					del cluster[ckeys[j]]
+					ckeys.pop(j)
 					#pdb.set_trace()
 				else:
-					print "Cannot correct!", correct
+					#print "Cannot correct!", correct
 					j += 1
 					#pdb.set_trace()
+			r1['dirty'] = changed
 			#pdb.set_trace()
 			i += 1
+
+	def iter_merge(self):
+		numclust = sum(len(x) for x in self.cluster_by_otu.itervalues())
+		print >> sys.stderr, "initial # of clusters: ", numclust
+		while True:
+			for k in self.cluster_by_otu:
+				self.iter_merge_otu(k, sys.stderr)
+			tmp = sum(len(x) for x in self.cluster_by_otu.itervalues())
+			print >> sys.stderr, "current # of clusters: ", tmp
+			if tmp == numclust:
+				break
+			numclust = tmp
 
 	def write(self, output_prefix):
 		"""
@@ -132,28 +130,24 @@ class ClusterCorrect:
 		And to a otu-style file <output_prefix>.otu.txt
 		<cluster_index> \t <tab delimited seq IDs>
 		
-		Output is in decreasing order of cluster size
 		"""
-		# sort the cluster by size
-		self.cluster_keys = self.cluster.keys()
-		self.cluster_keys.sort(key=lambda k: self.cluster[k]['size'], reverse=True)
 		w = FastqWriter(output_prefix + '.fq')
 		f = open(output_prefix + '.fasta', 'w')
 		h = open(output_prefix + '.otu.txt', 'w')
-		for cid in self.cluster_keys:
-			o = self.cluster[cid]
-			# need to massage qual for fq writing
-			o['qual'] = "".join(chr(o['qual'][i]+33) for i in xrange(len(o['seq'])))
-			o['ID'] = cid
-			w.write(o)
-			f.write(">{0}\n{1}\n".format(cid, o['seq']))
-			h.write("{0}".format(cid))
-			for member_cid in o['cids']:
-				h.write("\t" + "\t".join(self.otu_info[member_cid]))
-			h.write("\n")
+		a = open(output_prefix + '.abundance.txt', 'w')
+		for cluster in self.cluster_by_otu.itervalues():
+			for o in cluster.itervalues():
+				# need to massage qual for fq writing
+				o['qual'] = "".join(chr(o['qual'][i]+33) for i in xrange(o['len']))
+				o['ID'] = o['cids'][0]
+				w.write(o)
+				f.write(">{0}\n{1}\n".format(o['ID'], o['seq']))
+				h.write("{0}\t{1}\n".format(o['ID'], "\t".join(o['cids'])))
+				a.write("{0}\t{1}\n".format(o['ID'], o['size']))
 		w.close()
 		f.close()
 		h.close()
+		a.close()
 		os.system("gzip " + w.f.name)	
 
 if __name__ == "__main__":
