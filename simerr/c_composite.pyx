@@ -10,7 +10,7 @@ cdef extern from "math.h":
 	double pow(double x, double y)
 	double floor(double x)
 
-cdef object compose(bytes b1, bytes b2, double e1, double e2, object base_freq):
+cdef object compose(bytes b1, bytes b2, double e1, double e2, object base_freq, object mutate_freq):
 	"""
 	b1, b2 -- base calls
 	e1, e2 -- associated error probabilities
@@ -45,30 +45,30 @@ cdef object compose(bytes b1, bytes b2, double e1, double e2, object base_freq):
 		_sum = 0
 		for y,fy in base_freq.iteritems():
 			if y==n: _sum += fy*(1-e1)*(1-e2)
-			else: _sum += fy*e1*e2/9.
+			else: _sum += fy*e1*e2*mutate_freq[y][b1]*mutate_freq[y][b2]#_sum += fy*e1*e2/9.
 		p /= _sum
 	elif e1 < e2:
 		n = b1
 		x = base_freq[b1]
-		p = (1-e1)*(e2/3.)*x
+		p = (1-e1)*(e2*mutate_freq[b1][b2])*x#(1-e1)*(e2/3.)*x
 		_sum = 0
 		for y,fy in base_freq.iteritems():
-			if y==b1: _sum += fy*(1-e1)*e2/3.
-			elif y==b2: _sum += fy*e1/3.*(1-e2)
-			else: _sum += fy*e1*e2/9.
+			if y==b1: _sum += fy*(1-e1)*(e2*mutate_freq[y][b2])#_sum += fy*(1-e1)*e2/3.
+			elif y==b2: _sum += fy*(e1*mutate_freq[y][b1])*(1-e2)#fy*e1/3.*(1-e2)
+			else: _sum += fy*(e1*mutate_freq[y][b1])*(e2*mutate_freq[y][b2])#_sum += fy*e1*e2/9.
 		p /= _sum
 	else:
 		n = b2
-		p = (e1/3.)*(1-e2)*base_freq[b2]
+		p = (e1*mutate_freq[b2][b1])*(1-e2)*base_freq[b2]#(e1/3.)*(1-e2)*base_freq[b2]
 		_sum = 0
 		for y,fy in base_freq.iteritems():
-			if y==b1: _sum += fy*(1-e1)*e2/3.
-			elif y==b2: _sum += fy*e1/3.*(1-e2)
-			else: _sum += fy*e1*e2/9.
+			if y==b1: _sum += fy*(1-e1)*(e2*mutate_freq[y][b2])#_sum += fy*(1-e1)*e2/3.
+			elif y==b2: _sum += fy*(e1*mutate_freq[y][b1])*(1-e2)#_sum += fy*e1/3.*(1-e2)
+			else: _sum += fy*(e1*mutate_freq[y][b1])*(e2*mutate_freq[y][b2])#fy*e1*e2/9.
 		p /= _sum
 	return n, 1-p
 
-cdef object compose3(char* seq1, char* seq2, char* qual1, char* qual2, int offset, int N, object base_freq):
+cdef object compose3(char* seq1, char* seq2, char* qual1, char* qual2, int offset, int N, object base_freq, object mutate_freq):
 	"""
 	Should be called by the Python callable compose2
 
@@ -88,13 +88,13 @@ cdef object compose3(char* seq1, char* seq2, char* qual1, char* qual2, int offse
 	out_seq  = ''
 	for i in xrange(N):
 		q1 = pow(10, -(qual1[offset+i] - 33)/10.) # don't need atoi cuz a char is kept is int in cython
-		q2 = pow(10, -(qual2[i] - 33)/10.) 
-		n, e = compose(<bytes>seq1[offset+i], <bytes>seq2[i], q1, q2, base_freq)
+		q2 = pow(10, -(qual2[i] - 33)/10.)
+		n, e = compose(<bytes>seq1[offset+i], <bytes>seq2[i], q1, q2, base_freq, mutate_freq)
 		out_seq += n
 		out_qual += <bytes><int>floor((-10*log10(e) + 33)) # NOTE: occassionally off-by-1 with the Python version because of very small numerical differences....
 	return out_seq, out_qual
 
-def compose2(r1, r2, base_freq):
+def compose2(r1, r2, base_freq, mutate_freq):
 	"""
 	Takes the paired end records (see miscBowTie.BowTieReader)
 	and returns the composite read
@@ -111,11 +111,20 @@ def compose2(r1, r2, base_freq):
 	if insert <= 0: # there is no overlap! put a bunch of ?s in the middle
 		seq = r1['seq'] + '?'*(-insert) + r2['seq']
 		qual = r1['qual'] + '#'*(-insert) + r2['qual']
+	elif delta + len(r2['seq']) < N: # very rare chance that r2 is completely within r1!
+		seq = r1['seq'][:delta]
+		qual = r1['qual'][:delta]
+		i_seq, i_qual = compose3(r1['seq'], r2['seq'], r1['qual'], r2['qual'],\
+				delta, len(r2['seq']), base_freq, mutate_freq)
+		seq += i_seq
+		qual += i_qual
+		seq += r1['seq'][-(N-len(r2['seq'])-delta):]
+		qual += r1['qual'][-(N-len(r2['seq'])-delta):]
 	else:
 		seq = r1['seq'][:delta]
 		qual = r1['qual'][:delta]
 		i_seq, i_qual = compose3(r1['seq'], r2['seq'], r1['qual'], r2['qual'], \
-				delta, insert, base_freq)
+				delta, insert, base_freq, mutate_freq)
 		seq += i_seq
 		qual += i_qual
 		seq += r2['seq'][insert:]

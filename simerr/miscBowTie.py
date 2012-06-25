@@ -113,7 +113,9 @@ class BowTieReader:
 			# the 2nd batch Illumina ID is different:
 			# ex: HWI-ST700693:182:D0MGFACXX:7:1101:1472:1997/1  and
 			# ex: HWI-ST700693:182:D0MGFACXX:7:1101:1472:1997/2
-				assert r1['ID'][:-1] == r2['ID'][:-1]
+				#print r1['ID'][:-1]
+				#print r2['ID'][:-1]
+				assert r1['ID'][:r1['ID'].find('/')] == r2['ID'][:r2['ID'].find('/')]
 			else:
 				raise AssertionError, "ID format unknown! {0} and {1}".format(r1['ID'], r2['ID'])
 			return r1, r2
@@ -173,7 +175,6 @@ class BowTieWriter:
 		"""
 		Implement LATER (TODO)
 		"""
-		self.f.write(r['ID'] + '\t+\t' + r['ref'] + '\t' + str(r['offset']))
-		self.f.write('\t' + r['seq'] + '\t' + r['qual'] + '\n')
+		self.f.write(r['ID'] + '\t' + (r['strand'] if 'strand' in r else '+') + '\t' + r['ref'] + '\t' + str(r['offset']) + '\t' + r['seq'] + '\t' + r['qual'] + '\n')
 		
 

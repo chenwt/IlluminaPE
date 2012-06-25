@@ -1,6 +1,4 @@
 import os,sys
-from csv import DictReader
-from Bio import SeqIO
 from Bio.Seq import MutableSeq
 import pdb
 from miscBowTie import BowTieReader, FastqWriter
@@ -9,7 +7,7 @@ from BaseErrPredict import BaseErrPredict
 rint = lambda x: int(round(x))
 
 class ClusterCorrect:
-	def __init__(self, input_bowtie, otu_txt, primer, Rdata, max_allowed_remain_mismatch):
+	def __init__(self, input_bowtie, otu_txt, primer, Rdata, max_allowed_remain_mismatch, mm_threshold):
 		"""
 		input_bowtie --- in BowTie format (has seq, qual, and primer offset), gzipped
 		otu_txt --- otu file from Qiime (90%)
@@ -19,6 +17,7 @@ class ClusterCorrect:
 		self.otu_txt = otu_txt
 		self.primer = primer
 		self.max_allowed_remain_mismatch = max_allowed_remain_mismatch
+		self.mm_threshold = mm_threshold
 		
 		self.otu_info = {} # cid (after trie) --> 90% OTU id
 		self.cluster_by_otu = {} # OTU id --> cid --> qual,len,seq... 
@@ -46,6 +45,7 @@ class ClusterCorrect:
 		cluster = self.cluster_by_otu[otuid]
 		ckeys = cluster.keys()
 		ckeys.sort(key=lambda x: cluster[x]['size'], reverse=True)
+		print >> sys.stderr, "cluster sizes", [cluster[x]['size'] for x in ckeys]
 		i = 0
 		while i < len(ckeys):
 			r1 = cluster[ckeys[i]]
@@ -58,13 +58,16 @@ class ClusterCorrect:
 				if not r1['dirty'] and not r2['dirty']:
 					j += 1
 					continue
-				justmm = r1['size'] >= 10 and r2['size'] < 10 # TODO: hard code 10 or decide to param!
+				justmm = r1['size'] >= self.mm_threshold and r1['size']*1./r2['size'] >= self.mm_threshold
+				#justmm = r1['size'] >= self.mm_threshold and r2['size'] < self.mm_threshold # TODO: hard code 10 or decide to param!
 				flag, diff_poses, correct = self.predictor.compare_seq(\
 					r1['seq'], r2['seq'], r1['qual'], r2['qual'],\
 					r1['cycle'], r2['cycle'], self.primer, self.max_allowed_remain_mismatch, justmm)
 				if flag: # can correct!
 					changed = True
-					#print "Correcting!", correct
+					#print "Correcting!", justmm, diff_poses, correct
+					#print r1
+					#print r2
 					#pdb.set_trace()
 					logf.write("{cids}\t{pos}\n".format(cids=",".join(r2['cids']),pos=",".join(map(str,diff_poses))))
 					for pos, base, q, c in correct:
@@ -102,18 +105,26 @@ class ClusterCorrect:
 					ckeys.pop(j)
 					#pdb.set_trace()
 				else:
-					#print "Cannot correct!", correct
+					#print "Cannot correct!", diff_poses, correct
+					#print r1
+					#print r2
+					#raw_input('wait')
 					j += 1
 					#pdb.set_trace()
 			r1['dirty'] = changed
 			#pdb.set_trace()
 			i += 1
+			# re-sort in case sizes have changed the order
+			ckeys = cluster.keys()
+			ckeys.sort(key=lambda x: cluster[x]['size'], reverse=True)
 
 	def iter_merge(self):
 		numclust = sum(len(x) for x in self.cluster_by_otu.itervalues())
 		print >> sys.stderr, "initial # of clusters: ", numclust
 		while True:
-			for k in self.cluster_by_otu:
+			kkeys = self.cluster_by_otu.keys()
+			kkeys.sort(key=lambda x: max(p['size'] for p in self.cluster_by_otu[x].itervalues()),reverse=True)
+			for k in kkeys:#self.cluster_by_otu:
 				self.iter_merge_otu(k, sys.stderr)
 			tmp = sum(len(x) for x in self.cluster_by_otu.itervalues())
 			print >> sys.stderr, "current # of clusters: ", tmp
@@ -157,15 +168,27 @@ if __name__ == "__main__":
 	parser.add_argument("-o", dest="otu_txt", required=True, help="trie otu txt")
 	parser.add_argument("-p", dest="prefix", required=True, help="output prefix")
 	parser.add_argument("--mm", dest="mm", required=True, type=int, help="max allowed remain mismatch")
+	parser.add_argument("--mm-threshold", dest="mm_threshold", required=True, type=int, help="Threshold above which we don't accept errcor")
 	parser.add_argument("--primer", dest="primer", choices=['F', 'R'])
+	parser.add_argument("--primerfile", required=True, help="primer file")
+	parser.add_argument("--Rdata", required=True, help="model Rdata file")#default="/shared/silo_researcher/Lampe_J/Gut_Bugs/FH_Meredith/data/EBB_Illumina/data.htseq.org/FHCRC_Hullar/FCD05FJ/IlluminaPE//simerr/MPDR.training_size2000.RData", help="model Rdata file")
 	args = parser.parse_args()
 	
-	Fprimer = "ACTCCTACGGGAGGCAGCAGT"  # 5' to 3'
-	Rprimer = "GTATTACCGCGGCTGCTGGCAC" # 5' to 3'
-	Rdata = "/shared/silo_researcher/Lampe_J/Gut_Bugs/FH_Meredith/data/EBB_Illumina/data.htseq.org/FHCRC_Hullar/FCD05FJ/IlluminaPE//simerr/MPDR.training_size2000.RData"
+	#Fprimer = "ACTCCTACGGGAGGCAGCAGT"  # 5' to 3'
+	#Rprimer = "GTATTACCGCGGCTGCTGGCAC" # 5' to 3'
+	#Rdata = "/shared/silo_researcher/Lampe_J/Gut_Bugs/FH_Meredith/data/EBB_Illumina/data.htseq.org/FHCRC_Hullar/FCD05FJ/IlluminaPE//simerr/MPDR.training_size2000.RData"
 	
-	primer = Fprimer if args.primer=='F' else Rprimer
-	o = ClusterCorrect(args.input_bowtie, args.otu_txt, primer, Rdata, args.mm)
+	#primer = Fprimer if args.primer=='F' else Rprimer
+	primerseq = None
+	with open(args.primerfile) as handle:
+		for line in handle:
+			tag, seq = line.strip().split('\t')
+			if tag == args.primer:
+				primerseq = seq
+				break
+	assert primerseq is not None	
+	
+	o = ClusterCorrect(args.input_bowtie, args.otu_txt, primerseq, args.Rdata, args.mm, args.mm_threshold)
 	o.iter_merge()
 	o.write(args.prefix)
 

@@ -166,9 +166,9 @@ def detect_primers_PE(input1, input2, output_prefix, f_primer, r_primer, min_mat
 if __name__ == "__main__":
 	import argparse
 	
-	f_primer = 'ACTCCTACGGGAGGCAGCAGT'
-	r_primer = 'GTATTACCGCGGCTGCTGGCAC' # real reverse primer, use for paired ends
-	r_primer_revcomp = 'GTGCCAGCAGCCGCGGTAATAC' # reverse primer flipped to 5'-3', use for composite or aligned
+#	f_primer = 'ACTCCTACGGGAGGCAGCAGT'
+#	r_primer = 'GTATTACCGCGGCTGCTGGCAC' # real reverse primer, use for paired ends
+#	r_primer_revcomp = 'GTGCCAGCAGCCGCGGTAATAC' # reverse primer flipped to 5'-3', use for composite or aligned
 
 	parser = argparse.ArgumentParser(description='Remove complete or partial forward & reverse primers',\
 									formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -179,6 +179,8 @@ if __name__ == "__main__":
 	parser.add_argument("--mm", dest="mm", default=2, type=int, help="Max mismatch to primer allowed")
 	parser.add_argument("--de", dest="de", default=1, type=int, help="Max deletion to primer allowed")
 	parser.add_argument("--overlap", dest="overlap", default=10, type=int, help="Min primer overlap")
+	parser.add_argument("--fprimer", type=str, required=True, help="forward primer")
+	parser.add_argument("--rprimer", type=str, required=False, help="reverse primer")
 
 	args = parser.parse_args()
 	
@@ -187,7 +189,7 @@ if __name__ == "__main__":
 		assert args.input1 is not None and args.input2 is not None
 		assert args.input is None
 		assert args.output is not None
-		detect_primers_PE(args.input1, args.input2, args.output, f_primer, r_primer, args.overlap, args.mm, args.de, 0)
+		detect_primers_PE(args.input1, args.input2, args.output, args.fprimer, args.rprimer, args.overlap, args.mm, args.de, 0)
 	elif args.input is not None:
 		assert args.input1 is None and args.input2 is None
 		raise Exception, "Not implemented. Commented out@!"
