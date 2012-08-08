@@ -1,0 +1,80 @@
+** System Requirements **
+
+o Python 2.7. Not tested with Python 3.
+
+o BioPython, see http://biopython.org/wiki/Main_Page.
+
+
+** Installation **
+
+python setup.py install --prefix=<PREFIX>
+
+For example, I like to install it under my home directory with:
+
+python setup.py install --prefix=$HOME
+
+This will build and copy the files to $HOME/lib/python2.7/site-packages/PEassembly.
+
+The scripts will be in $HOME/bin.
+
+
+
+** Running PEassembly **
+
+(The examples below assume you are in the test/ directory and PEassembly has been succesfully installed).
+
+To detect and remove primers:
+
+python remove_primers.py -1 test.1.fq.gz -2 test.2.fq.gz -o test --fprimer ACTCCTACGGGAGGCAGCAGT --rprimer GTATTACCGCGGCTGCTGGCAC
+
+
+To remove read pairs with high number of low Phred scores:
+
+python remove_high_expected_err.py -1 test.Fprimer_good.gz -2 test.Rprimer_good.gz -e 10
+
+
+test.Fprimer_good.gz.experror_good.gz and test.Rprimer_good.gz.experror_good.gz 
+is what you want to use in the next step. However we need to first convert them into FASTQ format,
+also rename them into something a little shorter.
+
+python bioconvert.py -i test.Fprimer_good.gz.experror_good.gz b2fq
+python bioconvert.py -i test.Rprimer_good.gz.experror_good.gz b2fq
+gzip test.*primer_good.gz.experror_good.gz.fq
+ln -s test.Fprimer_good.gz.experror_good.gz.fq.gz test_good.1.fq.gz
+ln -s test.Rprimer_good.gz.experror_good.gz.fq.gz test_good.2.fq.gz
+
+To align reads using the quicker overlap-finding algorithm:
+
+python composite_overlap_finder.py -1 test_good.1.fq.gz -2 test_good.2.fq.gz -o test_good
+
+
+To align remaining unaligned reads using the slower BowTie aligner:
+
+python composite_bowtie_aligner.py -1 test_good.overlap.1.unaligned \
+                 -2 test_good.overlap.2.unaligned -o test_good
+
+
+Note that, the input to the overlap-finding script are GZIP fastq files, whereas
+BowTie can only take non-compressed fastq files!!
+
+
+To align the results from overlap-finding, you must first GZIP the output file:
+
+cat test_good.overlap.aligned test_good.bowtie.aligned > test_good.overlapNbowtie.aligned
+gzip test_good.overlapNbowtie.aligned
+
+Then run the paired-end assembly script:
+
+python run_composite.py --input test_good.overlapNbowtie.aligned.gz --output test_good.overlapNbowtie.aligned.gz.composite
+
+
+The output from run_composite.py is in BowTie format which can be converted into FASTA and FASTQ format using the bioconvert.py script. 
+
+gzip test_good.overlapNbowtie.aligned.gz.composite
+
+# this converts BowTie format (gzipped) to FASTA
+python bioconvert.py -i test_good.overlapNbowtie.aligned.gz.composite.gz b2f
+
+# this converts BowTie format (gzipped) to FASTQ
+python bioconvert.py -i test_good.overlapNbowtie.aligned.gz.composite.gz b2fq
+

@@ -1,11 +1,10 @@
 if __name__ == "__main__":
 	import os, sys
 	from collections import defaultdict
-	sys.path.append(os.path.join(os.environ['EBB'],'IlluminaPE/simerr'))
-	from miscBowTie import BowTieReader, BowTieWriter
+	from PEassembly.miscBowTie import BowTieReader, BowTieWriter
 	from cPickle import *
 	from optparse import OptionParser
-	from c_composite import compose2 # the cython version of composite
+	from PEassembly.c_composite import compose2 # the cython version of composite
 	#from composite import compose2 # this is the python version, comment out if using cython version
 
 	parser = OptionParser()
